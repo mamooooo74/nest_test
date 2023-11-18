@@ -1,42 +1,61 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
-import { Item } from './item.model';
+import { InjectRepository } from '@nestjs/typeorm';
 import { ItemStatus } from './item-status.enum';
 import { CreateItemDto } from './dto/create-item.dto';
+import { Item } from 'src/entities/item.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ItemsService {
+  constructor(
+    @InjectRepository(Item) private readonly itemRepository: Repository<Item>,
+  ) {}
   private items: Item[] = [];
-  findAll() {
-    return this.items;
+  async findAll() {
+    return await this.itemRepository.find();
   }
 
-  findById(id: string) {
-    const item = this.items.find((item) => item.id === id);
+  async findById(id: string) {
+    const item = await this.itemRepository.findOneBy({ id });
     if (!item) {
       throw new NotFoundException();
     }
     return item;
   }
 
-  create(creatteItemDto: CreateItemDto) {
-    const item: Item = {
-      id: uuid(),
-      ...creatteItemDto,
+  async create(creatteItemDto: CreateItemDto) {
+    const { name, price, description } = creatteItemDto;
+    const item = this.itemRepository.create({
+      name,
+      price,
+      description,
       status: ItemStatus.ON_SALE,
-    };
-    this.items.push(item);
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    await this.itemRepository.save(item);
     return item;
   }
 
-  updateStatus(id: string) {
-    const item = this.findById(id);
+  async updateStatus(id: string) {
+    const item = await this.findById(id);
     item.status = ItemStatus.SOLD_OUT;
+    item.updatedAt = new Date().toISOString();
+    const updatedItem = await this.itemRepository.update(id, {
+      status: item.status,
+      updatedAt: item.updatedAt,
+    });
+    if (updatedItem.affected === 0) {
+      throw new NotFoundException(`${id}のデータを更新できませんでした`);
+    }
     return item;
   }
 
-  deleteById(id: string) {
-    this.items = this.items.filter((item) => item.id !== id);
+  async deleteById(id: string) {
+    const response = await this.itemRepository.delete({ id });
+    if (response.affected !== 1) {
+      throw new NotFoundException(`${id}のデータを削除できませんでした`);
+    }
     return;
   }
 }

@@ -16,27 +16,27 @@ export class ItemsController {
   constructor(private readonly itemService: ItemsService) {}
 
   @Get()
-  findAll() {
-    return this.itemService.findAll();
+  async findAll() {
+    return await this.itemService.findAll();
   }
 
   @Get(':id')
-  findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.itemService.findById(id);
+  async findById(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.itemService.findById(id);
   }
 
   @Post()
-  create(@Body() createItemDto: CreateItemDto) {
-    return this.itemService.create(createItemDto);
+  async create(@Body() createItemDto: CreateItemDto) {
+    return await this.itemService.create(createItemDto);
   }
 
   @Patch(':id')
-  updateStatus(@Param('id', ParseUUIDPipe) id: string) {
-    return this.itemService.updateStatus(id);
+  async updateStatus(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.itemService.updateStatus(id);
   }
 
   @Delete(':id')
-  deleteById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.itemService.deleteById(id);
+  async deleteById(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.itemService.deleteById(id);
   }
 }
