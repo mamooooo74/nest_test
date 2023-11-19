@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -7,11 +8,20 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ItemsService } from './items.service';
 import { CreateItemDto } from './dto/create-item.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
+import { User } from 'src/entities/user.entity';
+import { Role } from 'src/auth/decorator/role.decorator';
+import { UserStatus } from 'src/auth/user-status.enum';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @Controller('items')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ItemsController {
   constructor(private readonly itemService: ItemsService) {}
 
@@ -26,17 +36,27 @@ export class ItemsController {
   }
 
   @Post()
-  async create(@Body() createItemDto: CreateItemDto) {
-    return await this.itemService.create(createItemDto);
+  @Role(UserStatus.PREMIUM)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async create(@Body() createItemDto: CreateItemDto, @GetUser() user: User) {
+    return await this.itemService.create(createItemDto, user);
   }
 
   @Patch(':id')
-  async updateStatus(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.itemService.updateStatus(id);
+  @UseGuards(JwtAuthGuard)
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ) {
+    return await this.itemService.updateStatus(id, user);
   }
 
   @Delete(':id')
-  async deleteById(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.itemService.deleteById(id);
+  @UseGuards(JwtAuthGuard)
+  async deleteById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ) {
+    return await this.itemService.deleteById(id, user);
   }
 }
